@@ -3,11 +3,12 @@ var ctx = canvas.getContext('2d');
 var pipeSpacing = 200;
 var pipeWidth = 100;
 var pipeGapSize = 200;
-var birdxPos = 100;
+var birdxPos = 200;
 var birdRadius = 20;
 var birdDefaultYVel = 15;
 var birdGravity = -1;
 var groundHeight = 50;
+var score = 0.0;
 
 
 function Pipe() {
@@ -74,6 +75,16 @@ function is_collide(bird, pipe) {
         || bird.yPos - birdRadius <= pipe.gapPos);
 }
 
+function draw_score() {
+    ctx.font = "48px serif";
+    ctx.fillText(score.toFixed(1).toString(), 10, 50);
+}
+
+function draw_ground() {
+    ctx.fillStyle="#9F5F00";
+    ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+}
+
 function loop() {
     // LOGIC
     for (var i = 0; i < pipes.length; i++) {
@@ -82,6 +93,13 @@ function loop() {
             window.location.reload();
         }
     }
+    if (bird.yPos + birdRadius >= canvas.height - groundHeight) {
+        alert("DEAD");
+        window.location.reload();
+    }
+
+    score += 0.1;
+    
     if (pipes[pipes.length - 1].xPos < canvas.width - pipeSpacing) {
         pipes.push(new Pipe());
     }
@@ -100,7 +118,7 @@ function loop() {
         pipes[i].draw();
     }
     bird.draw();
-    ctx.fillStyle="#9F5F00";
-    ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+    draw_score();
+    draw_ground();
 }
 setInterval(loop, 20);
