@@ -4,6 +4,7 @@ var pipeSpacing = 200;
 var pipeWidth = 100;
 var pipeGapSize = 200;
 var birdxPos = 100;
+var birdRadius = 20;
 var birdDefaultYVel = 15;
 var birdGravity = -1;
 var groundHeight = 50;
@@ -32,7 +33,7 @@ function Bird() {
     }
     this.draw = function(){
         ctx.beginPath();
-        ctx.arc(birdxPos, this.yPos, 20, 0, 2*Math.PI, false);
+        ctx.arc(birdxPos, this.yPos, birdRadius, 0, 2*Math.PI, false);
         ctx.fillStyle = "#DF2222";
         ctx.fill();
         ctx.lineWidth = 3;
@@ -47,14 +48,14 @@ function Bird() {
 
 var pipes = [];
 pipes.push(new Pipe());
-
 var bird = new Bird();
 
-document.addEventListener('click', function() {
+canvas.addEventListener('click', function() {
     bird.flap();
 }, false);
+
 var isFlapped = false;
-document.addEventListener('keydown', function(e) {
+window.addEventListener('keydown', function(e) {
     if (e.keyCode == 32) {
         if (!isFlapped) {
             bird.flap();
@@ -62,12 +63,25 @@ document.addEventListener('keydown', function(e) {
         }
     }
 }, true);
-document.addEventListener('keyup', function(e) {
+window.addEventListener('keyup', function(e) {
     isFlapped = false;
 }, true);
 
+function is_collide(bird, pipe) {
+    return birdxPos + birdRadius >= pipe.xPos
+        && birdxPos <= pipe.xPos + pipeWidth
+        && (bird.yPos + birdRadius >= pipe.gapPos + pipeGapSize
+        || bird.yPos - birdRadius <= pipe.gapPos);
+}
+
 function loop() {
     // LOGIC
+    for (var i = 0; i < pipes.length; i++) {
+        if (is_collide(bird, pipes[i])) {
+            alert("DEAD");
+            window.location.reload();
+        }
+    }
     if (pipes[pipes.length - 1].xPos < canvas.width - pipeSpacing) {
         pipes.push(new Pipe());
     }
