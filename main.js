@@ -47,9 +47,6 @@ function Bird() {
     }
 }
 
-var pipes = [];
-pipes.push(new Pipe());
-var bird = new Bird();
 
 canvas.addEventListener('click', function() {
     bird.flap();
@@ -87,8 +84,20 @@ function draw_ground() {
 
 function game_over() {
     alert("DEAD: Score = " + score.toFixed(1).toString());
-    window.location.reload();
+    init();
 }
+
+function init() {
+    pipes = [];
+    pipes.push(new Pipe());
+    bird = new Bird();
+    isFlapped = false;
+    score = 0;
+}
+
+var pipes;
+var bird;
+init();
 
 function loop() {
     // LOGIC
