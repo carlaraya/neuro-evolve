@@ -57,7 +57,7 @@ canvas.addEventListener('click', function() {
 
 var isFlapped = false;
 window.addEventListener('keydown', function(e) {
-    if (e.keyCode == 32) {
+    if (e.keyCode == 74) {
         if (!isFlapped) {
             bird.flap();
             isFlapped = true;
@@ -85,17 +85,20 @@ function draw_ground() {
     ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
 }
 
+function game_over() {
+    alert("DEAD: Score = " + score.toFixed(1).toString());
+    window.location.reload();
+}
+
 function loop() {
     // LOGIC
     for (var i = 0; i < pipes.length; i++) {
         if (is_collide(bird, pipes[i])) {
-            alert("DEAD");
-            window.location.reload();
+            game_over();
         }
     }
     if (bird.yPos + birdRadius >= canvas.height - groundHeight) {
-        alert("DEAD");
-        window.location.reload();
+        game_over();
     }
 
     score += 0.1;

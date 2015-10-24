@@ -1,19 +1,48 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8"/>
-    <title>Evolving Neural Networks</title>
-    <style type="text/css">
-      canvas { border: 1px solid black; }
-    </style>
-  </head>
-  <body>
-    <center>
-    <canvas id="mainCanvas" width="800" height="600"></canvas>
-    </center>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Evolving Neural Networks</title>
+        <style type="text/css">
+        canvas {
+            border: 1px solid black;
+        }
 
-<script src="main.js" >
-</script>
+        #wrapper {
+            overflow: hidden;
+            height: auto;
+        }
+        #main {
+            float: left;
+        }
+        #sidebar {
+            background: #c9c;
+            padding: 10px 10px 10px 10px;
+            width: auto;
+            overflow: hidden;
 
-  </body>
+            text-align: center
+        }
+
+        h1 {
+            font-family: Arial;
+        }
+        p {
+            font-family: Arial;
+        }
+        </style>
+    </head>
+    <body>
+        <div id="wrapper">
+            <div id="main">
+                <canvas id="mainCanvas" width="800" height="600"></canvas>
+            </div>
+            <div id="sidebar">
+                <h1>Flappy Bird Clone</h1>
+                <p>Press J or click to jump.</p>
+            </div>
+
+            <script src="main.js" ></script>
+        </div>
+    </body>
 </html>
