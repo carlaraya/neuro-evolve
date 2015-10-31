@@ -1,3 +1,4 @@
+var aiOn = true;
 var canvas = document.getElementById('mainCanvas');
 var ctx = canvas.getContext('2d');
 var pipeSpacing = 300;
@@ -39,22 +40,52 @@ var neuralnet = new NeuralNet(8, 1, 0, 0);
 init();
 
 canvas.addEventListener('click', function() {
-    bird.flap();
+    if (!aiOn) {
+        bird.flap();
+    }
 }, false);
 window.addEventListener('keydown', function(e) {
-    if (e.keyCode == 74) {
-        bird.flap();
+    if (!aiOn) {
+        if (e.keyCode == 74) {
+            bird.flap();
+        }
     }
 }, true);
 window.addEventListener('keyup', function(e) {
-    bird.release();
+    if (!aiOn) {
+        bird.release();
+    }
 }, true);
 function loop() {
     // LOGIC
     // ai_stuff
+    if (aiOn) {
+        var inputs = [];
+        inputs.push(bird.yPos / canvas.height);
+        inputs.push(bird.yVel / 50);
+        var i;
+        for (i = 0; pipes[i].xPos < bird.X_POS; i++);
 
-    console.log(inputs);
-        
+        var first = i;
+        while (i - first < 3 &&  i < pipes.length) {
+            inputs.push(pipes[i].xPos / canvas.width);
+            inputs.push(pipes[i].GAP_POS / canvas.height);
+            i++;
+        }
+        if (i - first < 3) {
+            for (; i - first < 3; i++) {
+                inputs.push(0);
+                inputs.push(0);
+            }
+        }
+        var outputs = neuralnet.update(inputs);
+        console.log(outputs);
+        if (outputs[0] > 0.5) {
+            bird.flap();
+        } else {
+            bird.release();
+        }
+    }
     // others
     for (var i = 0; i < pipes.length; i++) {
         if (is_collide(bird, pipes[i])) {
