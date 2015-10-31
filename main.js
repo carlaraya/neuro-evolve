@@ -51,6 +51,7 @@ window.addEventListener('keyup', function(e) {
 function loop() {
     // LOGIC
     // ai_stuff
+    // others
     for (var i = 0; i < pipes.length; i++) {
         if (is_collide(bird, pipes[i])) {
             game_over();
@@ -147,3 +148,4 @@ function Ground(ctx, canvasWidth, canvasHeight, groundHeight) {
         ctx.fillRect(0, canvasHeight - this.HEIGHT, canvasWidth, this.HEIGHT);
     }
 }
+
