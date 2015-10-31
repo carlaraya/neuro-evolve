@@ -1,25 +1,8 @@
 var canvas = document.getElementById('mainCanvas');
 var ctx = canvas.getContext('2d');
-var pipeSpacing = 200;
-var groundHeight = 50;
+var pipeSpacing = 300;
 var score = 0.0;
-
-var isFlapped = false;
-
-canvas.addEventListener('click', function() {
-    bird.flap();
-}, false);
-window.addEventListener('keydown', function(e) {
-    if (e.keyCode == 74) {
-        if (!isFlapped) {
-            bird.flap();
-            isFlapped = true;
-        }
-    }
-}, true);
-window.addEventListener('keyup', function(e) {
-    isFlapped = false;
-}, true);
+var groundHeight = 50;
 
 function is_collide(bird, pipe) {
     return bird.X_POS + bird.RADIUS >= pipe.xPos
@@ -30,13 +13,10 @@ function is_collide(bird, pipe) {
 
 function draw_score() {
     ctx.font = "48px serif";
+    ctx.fillStyle = "#FF0000";
     ctx.fillText(score.toFixed(1).toString(), 10, 50);
 }
 
-function draw_ground() {
-    ctx.fillStyle="#9F5F00";
-    ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
-}
 
 function game_over() {
     alert("DEAD: Score = " + score.toFixed(1).toString());
@@ -47,22 +27,36 @@ function init() {
     pipes = [];
     pipes.push(new Pipe(ctx, canvas.width, canvas.height));
     bird = new Bird(ctx, canvas.width, canvas.height);
-    isFlapped = false;
+    ground = new Ground(ctx, canvas.width, canvas.height, groundHeight);
     score = 0;
 }
 
 var pipes;
 var bird;
+var ground;
+
 init();
 
+canvas.addEventListener('click', function() {
+    bird.flap();
+}, false);
+window.addEventListener('keydown', function(e) {
+    if (e.keyCode == 74) {
+        bird.flap();
+    }
+}, true);
+window.addEventListener('keyup', function(e) {
+    bird.release();
+}, true);
 function loop() {
     // LOGIC
+    // ai_stuff
     for (var i = 0; i < pipes.length; i++) {
         if (is_collide(bird, pipes[i])) {
             game_over();
         }
     }
-    if (bird.yPos + bird.RADIUS >= canvas.height - groundHeight) {
+    if (bird.yPos + bird.RADIUS >= canvas.height - ground.HEIGHT) {
         game_over();
     }
 
@@ -86,10 +80,11 @@ function loop() {
         pipes[i].draw();
     }
     bird.draw();
+    ground.draw();
     draw_score();
-    draw_ground();
 }
 setInterval(loop, 20);
+
 
 
 function Pipe(ctx, canvasWidth, canvasHeight) {
@@ -98,7 +93,7 @@ function Pipe(ctx, canvasWidth, canvasHeight) {
     this.GAP_POS = Math.random() *
         (canvasHeight - this.GAP_SIZE - groundHeight);
 
-    this.xPos = canvasWidth + this.GAP_SIZE;
+    this.xPos = canvasWidth;
     this.draw = function(){
         ctx.fillStyle = "#00AF00";
         ctx.fillRect(this.xPos, this.GAP_POS+ this.GAP_SIZE,
@@ -119,8 +114,16 @@ function Bird(ctx, canvasWidth, canvasHeight) {
 
     this.yPos = canvasHeight / 2;
     this.yVel = this.DEFAULT_Y_VEL;
+    this.isFlapped = false;
     this.flap = function(){
-        this.yVel = this.DEFAULT_Y_VEL;
+        if (!this.isFlapped)
+        {
+            this.yVel = this.DEFAULT_Y_VEL;
+            this.isFlapped = true;
+        }
+    }
+    this.release = function(){
+        this.isFlapped = false;
     }
     this.draw = function(){
         ctx.beginPath();
@@ -134,5 +137,13 @@ function Bird(ctx, canvasWidth, canvasHeight) {
     this.update = function(){
         this.yVel += this.GRAVITY;
         this.yPos -= this.yVel;
+    }
+}
+
+function Ground(ctx, canvasWidth, canvasHeight, groundHeight) {
+    this.HEIGHT = groundHeight;
+    this.draw = function(){
+        ctx.fillStyle="#9F5F00";
+        ctx.fillRect(0, canvasHeight - this.HEIGHT, canvasWidth, this.HEIGHT);
     }
 }
