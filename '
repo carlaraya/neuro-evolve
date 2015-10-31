@@ -52,8 +52,15 @@ window.addEventListener('keyup', function(e) {
 function loop() {
     // LOGIC
     // ai_stuff
+    var inputs = [];
+    inputs.push(bird.yPos / canvas.height);
+    inputs.push(bird.yVel / 50);
+    var i;
+    for (i = 0; pipes[i].xPos < bird.X_POS; i++);
 
-    console.log(inputs);
+    var first = i;
+    while (i - first < 3 &&  i < pipes.length) {
+        inputs.push(pipes[i].xPos)
         
     // others
     for (var i = 0; i < pipes.length; i++) {
