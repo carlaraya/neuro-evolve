@@ -3,73 +3,7 @@
     <head>
         <meta charset="utf-8"/>
         <title>Evolving Neural Networks</title>
-        <style type="text/css">
-        canvas {
-            border: 1px solid black;
-        }
-
-        #wrapper {
-            overflow: hidden;
-            height: auto;
-        }
-        #main {
-            float: left;
-        }
-        #buttonlayout {
-            text-align: center;
-            float: left;
-            background: #1F7FFF;
-            width: 200px;
-            height: 550px;
-            border-style: solid;
-            border-width: 1px;
-            padding: 10px;
-            padding-top: 40px;
-        }
-        .prettybutton {
-            font-size: 18px;
-            font-family: Arial;
-            background: #BFBFBF;
-            margin-left: auto;
-            margin-right: auto;
-            width: 150px;
-            height: 24px;
-            border-style: solid;
-            border-width: 1px;
-            padding: 5px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .prettybutton:hover {
-            background: #FFFF00;
-        }
-        .prettybutton:active {
-            font-size: 17px;
-            width: 140px;
-            height: 23px;
-        }
-        #sidebar {
-            background: #c9c;
-            width: auto;
-            overflow: hidden;
-            height: 600px;
-            text-align: center;
-            border-style: solid;
-            border-width: 1px;
-        }
-        .spacing {
-            float: left;
-            padding: 5px;
-        }
-
-        h1, h2, p{
-            font-family: Arial;
-        }
-
-        #toggle-mode {
-        }
-        </style>
-        
+        <link href="style.css" rel="stylesheet" type="text/css">
         <script>
             aiOn = false;
             turbo = false;
@@ -82,8 +16,14 @@
             </div>
             <div class="spacing"></div>
             <div id="buttonlayout">
-                <h2> Options </h2>
+                <h2>Options</h2>
                 <div class="prettybutton" id="toggle-mode" onclick="toggle_mode();"></div>
+
+                <h2>Generation Scores</h2>
+                <div id="scores-list">
+                    <ol>
+                    </ol>
+                </div>
             </div>
             <div class="spacing"></div>
             <div id="sidebar">
@@ -91,6 +31,7 @@
                 <p>Press J or click to jump.</p>
             </div>
 
+            <script src="ann.js" ></script>
             <script src="main.js" ></script>
         </div>
     </body>

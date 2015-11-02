@@ -1,9 +1,15 @@
+/*
+ * TODO: Test gen alg for bugs
+ * TODO: Test neural inputs for bugs
+ */
 pipes = 0;
 bird = 0;
 ground = 0;
+outputs = [];
 population = [];
+popScores = [];
 
-spacePressed = false;
+isPaused = false;
 
 var canvas = document.getElementById('mainCanvas');
 var ctx = canvas.getContext('2d');
@@ -14,13 +20,26 @@ var groundHeight = 50;
 var playerHighScore = 0;
 
 var popSize = 20;
+var tourneySize = 20;
 var generation = 0;
 var creature = 0;
 
+var A = 8;
+var B = 1;
+var C = 0;
+var D = 8;
+
 function toggle_mode() {
     aiOn = !aiOn;
+    isPaused = false;
     init_button_text();
-    init();
+    init_environment();
+    if (population.length == 0) {
+        init_simulation();
+    }
+    if (!aiOn) {
+        document.getElementById("scores-list").innerHTML = "";
+    }
 }
 
 function init_button_text() {
@@ -46,49 +65,114 @@ function draw_stats() {
     ctx.fillStyle = "#000000";
     if (aiOn) {
         ctx.fillText("Generation " + generation.toString(), 10, 70);
-        ctx.fillText("Creature " + creature.toString(), 10, 90);
+        ctx.fillText("Creature " + (creature+1).toString(), 10, 90);
     } else {
         ctx.fillText("Highscore " + playerHighScore.toFixed(1).toString(), 10, 70);
     }
 }
 
+function draw_output_line() {
+    ctx.beginPath();
+    ctx.moveTo(0, outputs[0] * canvas.height + bird.RADIUS * 2);
+    ctx.lineTo(canvas.width, outputs[0] * canvas.height + bird.RADIUS * 2);
+    ctx.stroke();
+}
 
 function game_over() {
-    alert("DEAD: Score = " + score.toFixed(1).toString() + " (Press space or enter)");
+    ctx.font = "24px arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("DEAD (Press space)", 10, canvas.height / 2);
+    isPaused = true;
     if (score > playerHighScore) {
         playerHighScore = score;
     }
-    init();
+    init_environment();
 }
 
-function init() {
+function init_environment() {
     pipes = [];
     pipes.push(new Pipe(ctx, canvas.width, canvas.height));
     bird = new Bird(ctx, canvas.width, canvas.height);
     score = 0;
 
-    if (population.length == 0) {
-        init_simulation();
-    }
 }
 
 function move_on_to_next() {
-        creature++;
-        if (creature == popSize) {
-            creature = 0;
-            generation++;
+    popScores.push(score);
+    //console.log(popScores);
 
-            population = [];
-            for (var i = 0; i < popSize; i++) {
-                population.push(new NeuralNet(8, 1, 0, 8));
+    listHtml = "<ol>";
+    for (var i = 0; i < popScores.length; i++) {
+        listHtml += "<li>" + popScores[i].toFixed(1).toString() + "</li>";
+    }
+    listHtml += "</ol>";
+    document.getElementById("scores-list").innerHTML = listHtml;
+
+    creature++;
+    if (creature == popSize) {
+        creature = 0;
+        generation++;
+
+        // gen alg goes here. delete the stuff after this
+        newPopulation = [];
+        for (var i = 0; i < popSize / 2; i++) {
+            var prnts = [];
+            var prntsWeights = [];
+            for (var prnt = 0; prnt < 2; prnt++) {
+                var battlers = random_nums(popSize, tourneySize);
+                var bestGuy = 0;
+                var bestGuyScore = 0;
+                for (var j = 0; j < tourneySize; j++) {
+                    if (popScores[battlers[j]] > bestGuyScore) {
+                        bestGuy = battlers[j];
+                        bestGuyScore = popScores[battlers[j]];
+                    }
+                }
+                prnts.push(new NeuralNet(A, B, C, D));
+                prntsWeights.push(population[bestGuy].get_weights());
+                prnts[prnt].set_weights(prntsWeights[prnt]);
             }
-            
 
+            for (var j = 0; j < prntsWeights[0].length; j++) {
+                // crossover
+                if (Math.random() < 0.1) {
+                    var tmp = prntsWeights[0][j];
+                    prntsWeights[0][j] = prntsWeights[1][j];
+                    prntsWeights[1][j] = tmp;
+                }
+
+                // mutation
+                for (var child = 0; child < 2; child++) {
+                    if (Math.random() < 0.12) {
+                        prntsWeights[child][j] = Math.random() * 2 - 1;
+                    }
+                }
+            }
+
+            //console.log(prntsWeights[0]);
+            //console.log(prntsWeights[1]);
+            prnts[0].set_weights(prntsWeights[0]);
+            prnts[1].set_weights(prntsWeights[1]);
+            newPopulation.push(prnts[0]);
+            newPopulation.push(prnts[1]);
         }
+        if (popSize % 2 == 1) {
+            newPopulation.pop();
+        }
+        population = newPopulation;
+        popScores = [];
+        /*
+        population = [];
+        for (var i = 0; i < popSize; i++) {
+            population.push(new NeuralNet(8, 1, 0, 8));
+        }
+        */
+        
+    }
 } 
 
 function init_new() {
-    init();
+    init_environment();
     init_button_text();
     ground = new Ground(ctx, canvas.width, canvas.height, groundHeight);
     if (aiOn) {
@@ -99,7 +183,7 @@ function init_new() {
 function init_simulation() {
     creature = 0;
     for (var i = 0; i < popSize; i++) {
-        population.push(new NeuralNet(8, 1, 0, 8));
+        population.push(new NeuralNet(A, B, C, D));
     }
 }
 
@@ -109,6 +193,7 @@ init_new();
 canvas.addEventListener('click', function() {
     if (!aiOn) {
         bird.flap();
+        bird.release();
     }
 }, false);
 
@@ -118,7 +203,7 @@ window.addEventListener('keydown', function(e) {
             bird.flap();
         }
         if (e.keyCode == 32) {
-            spacePressed = true;
+            isPaused = false;
         }
     }
 
@@ -126,10 +211,10 @@ window.addEventListener('keydown', function(e) {
 window.addEventListener('keyup', function(e) {
     if (!aiOn) {
         bird.release();
-        spacePressed = false;
     }
 }, true);
 function loop() {
+    if (isPaused) return;
     // LOGIC
     // ai_stuff
     if (aiOn) {
@@ -151,20 +236,29 @@ function loop() {
                 inputs.push(-1);
             }
         }
-        var outputs = population[creature].update(inputs);
-        console.log(outputs);
+        outputs = population[creature].update(inputs);
+        console.log(inputs);
+        //console.log(outputs);
+
+        // interpret output
+        /*
         if (outputs[0] > 0.5) {
             bird.flap();
         } else {
             bird.release();
         }
+        */
+        if (outputs[0] * canvas.height < bird.yPos) {
+            bird.flap();
+            bird.release();
+        }
     }
-    // others
+    // check if bird died
     for (var i = 0; i < pipes.length; i++) {
         if (is_collide(bird, pipes[i])) {
             if (aiOn) {
-                init();
                 move_on_to_next();
+                init_environment();
             } else {
                 game_over();
             }
@@ -172,37 +266,47 @@ function loop() {
     }
     if (bird.yPos + bird.RADIUS >= canvas.height - ground.HEIGHT) {
         if (aiOn) {
-            init();
             move_on_to_next();
+            init_environment();
         } else {
             game_over();
         }
     }
 
-    score += 0.1;
+    if (!isPaused) {
+        score += 0.1;
+
+        // update environment
+        if (pipes[pipes.length - 1].xPos < canvas.width - pipeSpacing) {
+            pipes.push(new Pipe(ctx, canvas.width, canvas.height));
+        }
+        if (pipes[0].xPos < -pipes[0].WIDTH) {
+            pipes.shift();
+        }
+        for (var i = 0; i < pipes.length; i++) {
+            pipes[i].update();
+        }
+        bird.update();
+
+        // RENDERING
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var i = 0; i < pipes.length; i++) {
+            pipes[i].draw();
+        }
+        bird.draw();
+        ground.draw();
+        draw_stats();
+
+        if (aiOn) {
+            draw_output_line();
+        }
+
+    }
     
-    if (pipes[pipes.length - 1].xPos < canvas.width - pipeSpacing) {
-        pipes.push(new Pipe(ctx, canvas.width, canvas.height));
-    }
-    if (pipes[0].xPos < -pipes[0].WIDTH) {
-        pipes.shift();
-    }
-    for (var i = 0; i < pipes.length; i++) {
-        pipes[i].update();
-    }
-    bird.update();
-
-    // RENDERING
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (var i = 0; i < pipes.length; i++) {
-        pipes[i].draw();
-    }
-    bird.draw();
-    ground.draw();
-    draw_stats();
 }
-setInterval(loop, 20);
+setInterval(loop, 100);
 
 
 
@@ -268,97 +372,20 @@ function Ground(ctx, canvasWidth, canvasHeight, groundHeight) {
 }
 
 
-
-
-/* sample usage
-var neuralnet = new NeuralNet(1, 1, 0, 0);
-var weights = neuralnet.get_weights();
-for (var i = 0; i < weights.length; i++) {
-    console.log(weights[i]);
-}
-
-var inputs = [1];
-var outputs = neuralnet.update(inputs);
-for (var i = 0; i < outputs.length; i++) {
-    console.log(outputs[i]);
-}
-*/
-
-
-
-function Neuron(nInputs) {
-    this.nInputs = nInputs;
-    this.weights = [];
-    for (var i = 0; i < this.nInputs + 1; i++) {
-        this.weights.push(Math.random() * 2 - 1);
+// randomly select k unique ints in the range [0, n)
+function random_nums(n, k) {
+    var nums = [];
+    var randoms = [];
+    for (var i = 0; i < n; i++) {
+        nums.push(i);
     }
-}
-
-function NeuronLayer(nNeurons, nInputsPerNeuron) {
-    this.nNeurons = nNeurons;
-    this.neurons = [];
-    this.nInputsPerNeuron = nInputsPerNeuron;
-    for (var i = 0; i < this.nNeurons; i++) {
-        this.neurons.push(new Neuron(nInputsPerNeuron));
-        for (var j = 0; j < this.nInputs + 1; j++) {
-        }
+    for (var i = 0; i < k; i++) {
+        var numPick = (Math.random() * (n - i) + i) | 0;
+        randoms.push(nums[numPick]);
+        var tmp = nums[numPick];
+        nums[numPick] = nums[i];
+        nums[i] = tmp;
     }
-}
-
-function NeuralNet(nInputs, nOutputs, nHiddenLayers, nNeursPerHiddenLyr) { 
-    this.nInputs = nInputs;
-    this.nOutputs = nOutputs;
-    this.nHiddenLayers = nHiddenLayers;
-    this.nNeursPerHiddenLyr = nNeursPerHiddenLyr;
-
-    this.layers = [];
-
-    if (this.nHiddenLayers > 0) {
-        this.layers.push(new NeuronLayer(this.nNeursPerHiddenLyr, this.nInputs));
-        for (var i = 0; i < this.nHiddenLayers - 1; i++) {
-            this.layers.push(new NeuronLayer(this.nNeursPerHiddenLyr, this.nNeursPerHiddenLyr));
-        }
-        this.layers.push(new NeuronLayer(this.nOutputs, this.nNeursPerHiddenLyr));
-    } else {
-        this.layers.push(new NeuronLayer(this.nOutputs, this.nInputs));
-    }
-
-    this.update = function(inputs) {
-        var outputs = [];
-        if (inputs.length != this.nInputs) {
-            return outputs;
-        }
-        for (var i = 0; i < this.layers.length; i++) {
-            if (i > 0) {
-                inputs = outputs.slice();
-            }
-            outputs = [];
-            for (var j = 0; j < this.layers[i].neurons.length; j++) {
-                var x = 0.0;
-                for (var k = 0; k < inputs.length; k++) {
-                    x += this.layers[i].neurons[j].weights[k] * inputs[k];
-                }
-                x += this.layers[i].neurons[j].weights[inputs.length];
-                outputs.push(sigmoid(x));
-            }
-        }
-        return outputs;
-    }
-
-
-    this.get_weights = function() {
-        var allWeights = [];
-        for (var i = 0; i < this.layers.length; i++) {
-            for (var j = 0; j < this.layers[i].neurons.length; j++) {
-                for (var k = 0; k < this.layers[i].neurons[j].weights.length; k++) {
-                    allWeights.push(this.layers[i].neurons[j].weights[k]);
-                }
-            }
-        }
-        return allWeights;
-    }
-}
-
-function sigmoid(x) {
-    return 1 / (1 + Math.exp(-x));
+    //console.log(randoms);
+    return randoms;
 }
