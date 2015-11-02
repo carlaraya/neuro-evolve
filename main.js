@@ -1,7 +1,3 @@
-/*
- * TODO: Test gen alg for bugs
- * TODO: Test neural inputs for bugs
- */
 pipes = 0;
 bird = 0;
 ground = 0;
@@ -24,10 +20,13 @@ var tourneySize = 20;
 var generation = 0;
 var creature = 0;
 
-var A = 8;
+var crossoverRate = 0.1;
+var mutationRate = 0.1;
+
+var A = 4;
 var B = 1;
-var C = 0;
-var D = 8;
+var C = 1;
+var D = 2;
 
 function toggle_mode() {
     aiOn = !aiOn;
@@ -81,7 +80,7 @@ function draw_output_line() {
 function game_over() {
     ctx.font = "24px arial";
     ctx.fillStyle = "#000000";
-    ctx.fillText("DEAD (Press space)", 10, canvas.height / 2);
+    ctx.fillText("DEAD (Press space)", 30, canvas.height / 2);
     isPaused = true;
     if (score > playerHighScore) {
         playerHighScore = score;
@@ -110,64 +109,8 @@ function move_on_to_next() {
 
     creature++;
     if (creature == popSize) {
-        creature = 0;
-        generation++;
-
-        // gen alg goes here. delete the stuff after this
-        newPopulation = [];
-        for (var i = 0; i < popSize / 2; i++) {
-            var prnts = [];
-            var prntsWeights = [];
-            for (var prnt = 0; prnt < 2; prnt++) {
-                var battlers = random_nums(popSize, tourneySize);
-                var bestGuy = 0;
-                var bestGuyScore = 0;
-                for (var j = 0; j < tourneySize; j++) {
-                    if (popScores[battlers[j]] > bestGuyScore) {
-                        bestGuy = battlers[j];
-                        bestGuyScore = popScores[battlers[j]];
-                    }
-                }
-                prnts.push(new NeuralNet(A, B, C, D));
-                prntsWeights.push(population[bestGuy].get_weights());
-                prnts[prnt].set_weights(prntsWeights[prnt]);
-            }
-
-            for (var j = 0; j < prntsWeights[0].length; j++) {
-                // crossover
-                if (Math.random() < 0.1) {
-                    var tmp = prntsWeights[0][j];
-                    prntsWeights[0][j] = prntsWeights[1][j];
-                    prntsWeights[1][j] = tmp;
-                }
-
-                // mutation
-                for (var child = 0; child < 2; child++) {
-                    if (Math.random() < 0.12) {
-                        prntsWeights[child][j] = Math.random() * 2 - 1;
-                    }
-                }
-            }
-
-            //console.log(prntsWeights[0]);
-            //console.log(prntsWeights[1]);
-            prnts[0].set_weights(prntsWeights[0]);
-            prnts[1].set_weights(prntsWeights[1]);
-            newPopulation.push(prnts[0]);
-            newPopulation.push(prnts[1]);
-        }
-        if (popSize % 2 == 1) {
-            newPopulation.pop();
-        }
-        population = newPopulation;
-        popScores = [];
-        /*
-        population = [];
-        for (var i = 0; i < popSize; i++) {
-            population.push(new NeuralNet(8, 1, 0, 8));
-        }
-        */
-        
+        // run gen alg
+        gen_alg();
     }
 } 
 
@@ -187,7 +130,6 @@ function init_simulation() {
     }
 }
 
-
 init_new();
 
 canvas.addEventListener('click', function() {
@@ -201,10 +143,12 @@ window.addEventListener('keydown', function(e) {
     if (!aiOn) {
         if (e.keyCode == 74) {
             bird.flap();
-        }
-        if (e.keyCode == 32) {
+        } else if (e.keyCode == 32) {
             isPaused = false;
         }
+    }
+    if (e.keyCode == 75) {
+        turbo = !turbo;
     }
 
 }, true);
@@ -218,12 +162,21 @@ function loop() {
     // LOGIC
     // ai_stuff
     if (aiOn) {
+        // get inputs
         var inputs = [];
         inputs.push(bird.yPos / canvas.height * 2 - 1);
         inputs.push(bird.yVel / 50);
         var i;
         for (i = 0; pipes[i].xPos + pipes[i].WIDTH < bird.X_POS; i++);
 
+        if (pipes[i]) {
+            inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
+            inputs.push(pipes[i].GAP_POS / canvas.height * 2 - 1);
+        } else {
+            inputs.push(0);
+            inputs.push(0);
+        }
+        /*
         var first = i;
         while (i - first < 3 &&  i < pipes.length) {
             inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
@@ -236,22 +189,23 @@ function loop() {
                 inputs.push(-1);
             }
         }
+        */
         outputs = population[creature].update(inputs);
         console.log(inputs);
         //console.log(outputs);
 
         // interpret output
-        /*
         if (outputs[0] > 0.5) {
             bird.flap();
         } else {
             bird.release();
         }
-        */
+        /*
         if (outputs[0] * canvas.height < bird.yPos) {
             bird.flap();
             bird.release();
         }
+        */
     }
     // check if bird died
     for (var i = 0; i < pipes.length; i++) {
@@ -292,16 +246,20 @@ function loop() {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        for (var i = 0; i < pipes.length; i++) {
-            pipes[i].draw();
+        if (!turbo) {
+            for (var i = 0; i < pipes.length; i++) {
+                pipes[i].draw();
+            }
+            bird.draw();
+            ground.draw();
+            /*
+            if (aiOn) {
+                draw_output_line();
+            }
+            */
+            draw_stats();
         }
-        bird.draw();
-        ground.draw();
-        draw_stats();
 
-        if (aiOn) {
-            draw_output_line();
-        }
 
     }
     
@@ -388,4 +346,85 @@ function random_nums(n, k) {
     }
     //console.log(randoms);
     return randoms;
+}
+
+function gen_alg() {
+    creature = 0;
+    generation++;
+
+    newPopulation = [];
+    for (var i = 0; i < (popSize + 1) / 2; i++) {
+        var prnts = [];
+        var prntsWeights = [];
+        for (var prnt = 0; prnt < 2; prnt++) {
+            var battlers = random_nums(popSize, tourneySize);
+            var bestGuy = 0;
+            var bestGuyScore = 0;
+            for (var j = 0; j < tourneySize; j++) {
+                if (popScores[battlers[j]] > bestGuyScore) {
+                    bestGuy = battlers[j];
+                    bestGuyScore = popScores[battlers[j]];
+                }
+            }
+            prnts.push(new NeuralNet(A, B, C, D));
+            prntsWeights.push(population[bestGuy].get_weights());
+            prnts[prnt].set_weights(prntsWeights[prnt]);
+        }
+
+        for (var j = 0; j < prntsWeights[0].length; j++) {
+            // crossover
+            if (Math.random() < crossoverRate) {
+                var tmp = prntsWeights[0][j];
+                prntsWeights[0][j] = prntsWeights[1][j];
+                prntsWeights[1][j] = tmp;
+            }
+
+            // mutation
+            for (var child = 0; child < 2; child++) {
+                if (Math.random() < mutationRate) {
+                    prntsWeights[child][j] =
+                        random_normal_offset(prntsWeights[child][j]);
+                }
+            }
+        }
+
+        //console.log(prntsWeights[0]);
+        //console.log(prntsWeights[1]);
+        prnts[0].set_weights(prntsWeights[0]);
+        prnts[1].set_weights(prntsWeights[1]);
+        newPopulation.push(prnts[0]);
+        newPopulation.push(prnts[1]);
+    }
+    if (popSize % 2 == 1) {
+        newPopulation.pop();
+    }
+    population = newPopulation;
+    popScores = [];
+    /*
+    population = [];
+    for (var i = 0; i < popSize; i++) {
+        population.push(new NeuralNet(8, 1, 0, 8));
+    }
+    */
+}
+
+// Returns random numbers in the range [-1, 1) distributed normally
+function random_normal() {
+    var accuracy = 6;
+    var n = 0;
+    for (var i = 0; i < accuracy; i++) {
+        n += Math.random();
+    }
+    n /= (accuracy / 2);
+    n -= 1;
+    return n;
+}
+
+function random_normal_offset(offset) {
+    var n;
+    do
+    {
+        n = random_normal() + offset;
+    } while (n >= 1 || n < -1);
+    return n;
 }
