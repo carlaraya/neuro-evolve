@@ -1,4 +1,5 @@
-pipes = 0;
+pipes = [];
+pipeNums = [];
 bird = 0;
 ground = 0;
 outputs = [];
@@ -20,8 +21,8 @@ var tourneySize = 20;
 var generation = 0;
 var creature = 0;
 
-var crossoverRate = 0.1;
-var mutationRate = 0.1;
+var crossoverRate = 0.05;
+var mutationRate = 0.05;
 
 var A = 4;
 var B = 1;
@@ -66,7 +67,8 @@ function draw_stats() {
         ctx.fillText("Generation " + generation.toString(), 10, 70);
         ctx.fillText("Creature " + (creature+1).toString(), 10, 90);
     } else {
-        ctx.fillText("Highscore " + playerHighScore.toFixed(1).toString(), 10, 70);
+        ctx.fillText("Highscore " + playerHighScore.toFixed(1).toString(),
+                10, 70);
     }
 }
 
@@ -90,7 +92,9 @@ function game_over() {
 
 function init_environment() {
     pipes = [];
+    pipeNums = [];
     pipes.push(new Pipe(ctx, canvas.width, canvas.height));
+    pipeNums.push(1);
     bird = new Bird(ctx, canvas.width, canvas.height);
     score = 0;
 
@@ -101,7 +105,13 @@ function move_on_to_next() {
     //console.log(popScores);
 
     listHtml = "<ol>";
-    for (var i = 0; i < popScores.length; i++) {
+    for (var i = 0; i < 1; i++) {
+        if (i < popScores.length) {
+            listHtml +=
+                "<li><b>" + popScores[i].toFixed(1).toString() + "</b></li>";
+        }
+    }
+    for (var i = 1; i < popScores.length; i++) {
         listHtml += "<li>" + popScores[i].toFixed(1).toString() + "</li>";
     }
     listHtml += "</ol>";
@@ -109,8 +119,11 @@ function move_on_to_next() {
 
     creature++;
     if (creature == popSize) {
-        // run gen alg
-        gen_alg();
+        creature = 0;
+        generation++;
+        // run genetic algorithm
+        //gen_alg_meh();
+        gen_alg_1best();
     }
 } 
 
@@ -191,7 +204,7 @@ function loop() {
         }
         */
         outputs = population[creature].update(inputs);
-        console.log(inputs);
+        //console.log(inputs);
         //console.log(outputs);
 
         // interpret output
@@ -233,10 +246,13 @@ function loop() {
         // update environment
         if (pipes[pipes.length - 1].xPos < canvas.width - pipeSpacing) {
             pipes.push(new Pipe(ctx, canvas.width, canvas.height));
+            pipeNums.push(pipeNums[pipeNums.length - 1] + 1);
         }
         if (pipes[0].xPos < -pipes[0].WIDTH) {
             pipes.shift();
+            pipeNums.shift();
         }
+
         for (var i = 0; i < pipes.length; i++) {
             pipes[i].update();
         }
@@ -249,6 +265,9 @@ function loop() {
         if (!turbo) {
             for (var i = 0; i < pipes.length; i++) {
                 pipes[i].draw();
+                ctx.font = "24px arial";
+                ctx.fillStyle = "#000000";
+                ctx.fillText(pipeNums[i].toString(), pipes[i].xPos - 50, 25);
             }
             bird.draw();
             ground.draw();
@@ -264,9 +283,6 @@ function loop() {
     }
     
 }
-setInterval(loop, 20);
-
-
 
 function Pipe(ctx, canvasWidth, canvasHeight) {
     this.WIDTH = 100;
@@ -348,10 +364,32 @@ function random_nums(n, k) {
     return randoms;
 }
 
-function gen_alg() {
-    creature = 0;
-    generation++;
+// Returns random numbers in the range [-1, 1) distributed normally
+function random_normal() {
+    var accuracy = 6;
+    var n = 0;
+    for (var i = 0; i < accuracy; i++) {
+        n += Math.random();
+    }
+    n /= (accuracy / 2);
+    n -= 1;
+    return n;
+}
 
+function random_normal_offset(offset) {
+    var n;
+    do
+    {
+        n = random_normal() + offset;
+    } while (n >= 1 || n < -1);
+    return n;
+}
+
+/*
+ * Mehhh gen alg. Picks best guy, then does random mutations based on
+ * mutation rate.
+ */
+function gen_alg_meh() {
     newPopulation = [];
     for (var i = 0; i < (popSize + 1) / 2; i++) {
         var prnts = [];
@@ -372,7 +410,7 @@ function gen_alg() {
         }
 
         for (var j = 0; j < prntsWeights[0].length; j++) {
-            // crossover
+            // crossover (does nothing if tourney size is same as pop size)
             if (Math.random() < crossoverRate) {
                 var tmp = prntsWeights[0][j];
                 prntsWeights[0][j] = prntsWeights[1][j];
@@ -400,31 +438,107 @@ function gen_alg() {
     }
     population = newPopulation;
     popScores = [];
-    /*
-    population = [];
+}
+
+/*
+ * Another gen alg. Selects 2 best guys that will live to the next generation.
+ * They will also be parents of every other creatures in next gen.
+ */
+function gen_alg_2best() {
+    var newPop = [];
+    var newPopWeights = [];
+    var bestGuy = -1;
+    var bestGuyScore = 0;
+    var bestGuy2nd = -1;
+    var bestGuyScore2nd = 0;
     for (var i = 0; i < popSize; i++) {
-        population.push(new NeuralNet(8, 1, 0, 8));
+        if (popScores[i] >= bestGuyScore) {
+            bestGuy = i;
+            bestGuyScore = popScores[i];
+        }
     }
-    */
-}
 
-// Returns random numbers in the range [-1, 1) distributed normally
-function random_normal() {
-    var accuracy = 6;
-    var n = 0;
-    for (var i = 0; i < accuracy; i++) {
-        n += Math.random();
+    for (var i = 0; i < popSize; i++) {
+        if (popScores[i] >= bestGuyScore2nd && i != bestGuy) {
+            bestGuy2nd = i;
+            bestGuyScore2nd = popScores[i];
+        }
     }
-    n /= (accuracy / 2);
-    n -= 1;
-    return n;
-}
 
-function random_normal_offset(offset) {
-    var n;
-    do
-    {
-        n = random_normal() + offset;
-    } while (n >= 1 || n < -1);
-    return n;
+    newPop.push(new NeuralNet(A, B, C, D));
+    newPopWeights.push(population[bestGuy].get_weights());
+    newPop[0].set_weights(newPopWeights[0]);
+    newPop.push(new NeuralNet(A, B, C, D));
+    newPopWeights.push(population[bestGuy2nd].get_weights());
+    newPop[1].set_weights(newPopWeights[1]);
+
+    for (var i = 2; i < popSize; i += 2) {
+        newPop.push(new NeuralNet(A, B, C, D));
+        newPopWeights.push(newPop[0].get_weights());
+        newPop.push(new NeuralNet(A, B, C, D));
+        newPopWeights.push(newPop[1].get_weights());
+
+        for (var j = 0; j < newPopWeights[i].length; j++) {
+            // crossover
+            if (Math.random() < crossoverRate) {
+                var tmp = newPopWeights[i][j];
+                newPopWeights[i][j] = newPopWeights[i+1][j];
+                newPopWeights[i+1][j] = tmp;
+            }
+
+            // mutation
+            for (var child = i; child < i+2; child++) {
+                if (Math.random() < mutationRate) {
+                    newPopWeights[child][j] =
+                        random_normal_offset(newPopWeights[child][j]);
+                }
+            }
+        }
+        newPop[i].set_weights(newPopWeights[i]);
+        newPop[i+1].set_weights(newPopWeights[i+1]);
+    }
+    if (popSize % 2 == 1) {
+        newPop.pop();
+    }
+    population = newPop;
+    popScores = [];
 }
+function gen_alg_1best() {
+    var newPop = [];
+    var newPopWeights = [];
+    var bestGuy = -1;
+    var bestGuyScore = 0;
+    for (var i = 0; i < popSize; i++) {
+        if (popScores[i] >= bestGuyScore) {
+            bestGuy = i;
+            bestGuyScore = popScores[i];
+        }
+    }
+    newPop.push(new NeuralNet(A, B, C, D));
+    newPopWeights.push(population[bestGuy].get_weights());
+    newPop[0].set_weights(newPopWeights[0]);
+    for (var i = 1; i < popSize; i += 2) {
+        newPop.push(new NeuralNet(A, B, C, D));
+        newPopWeights.push(newPop[0].get_weights());
+        newPop.push(new NeuralNet(A, B, C, D));
+        newPopWeights.push(newPop[1].get_weights());
+
+        for (var j = 0; j < newPopWeights[i].length; j++) {
+            // mutation
+            for (var child = i; child < i+2; child++) {
+                if (Math.random() < mutationRate) {
+                    newPopWeights[child][j] =
+                        random_normal_offset(newPopWeights[child][j]);
+                }
+            }
+        }
+        newPop[i].set_weights(newPopWeights[i]);
+        newPop[i+1].set_weights(newPopWeights[i+1]);
+    }
+    if (popSize % 2 == 0) {
+        newPop.pop();
+    }
+    population = newPop;
+    popScores = [];
+}
+setInterval(loop, 0);
