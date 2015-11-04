@@ -10,6 +10,8 @@ population = [];
 popScores = [];
 birdsRemaining = 0;
 
+highScores = [];
+
 
 isPaused = false;
 
@@ -46,7 +48,7 @@ function toggle_mode() {
         init_simulation();
     }
     if (!aiOn) {
-        document.getElementById("scores-list").innerHTML = "";
+        document.getElementById("creature-scores").innerHTML = "";
     }
 }
 
@@ -96,7 +98,18 @@ function draw_scoreboard() {
         listHtml += "</li>";
     }
     listHtml += "</ol>";
-    document.getElementById("scores-list").innerHTML = listHtml;
+    document.getElementById("creature-scores").innerHTML = listHtml;
+}
+
+function draw_highscoreboard() {
+    listHtml = "<ol>";
+    for (var i = 0; i < highScores.length; i++) {
+        listHtml += "<li>";
+        listHtml += highScores[i].toFixed(1).toString();
+        listHtml += "</li>";
+    }
+    listHtml += "</ol>";
+    document.getElementById("gen-scores").innerHTML = listHtml;
 }
 
 function game_over() {
@@ -131,12 +144,12 @@ function init_environment() {
 function move_on_to_next() {
     //console.log(popScores);
 
-
     generation++;
     // run genetic algorithm
     //gen_alg_meh();
     gen_alg_1best();
     init_environment();
+    draw_highscoreboard();
 } 
 
 function init_new() {
@@ -554,6 +567,8 @@ function gen_alg_1best() {
             bestGuyScore = popScores[i];
         }
     }
+
+    highScores.push(bestGuyScore);
     newPop.push(new NeuralNet(A, B, C, D));
     newPopWeights.push(population[bestGuy].get_weights());
     newPop[0].set_weights(newPopWeights[0]);

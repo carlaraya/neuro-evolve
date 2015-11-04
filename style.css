@@ -9,11 +9,11 @@ canvas {
 #main {
     float: left;
 }
-#buttonlayout {
+.info-options {
     text-align: center;
     float: left;
     background: #1F7FFF;
-    width: 200px;
+    width: 150px;
     height: 580px;
     border-style: solid;
     border-width: 1px;
@@ -25,13 +25,14 @@ canvas {
     background: #BFBFBF;
     margin-left: auto;
     margin-right: auto;
-    width: 150px;
-    height: 24px;
+    width: 130px;
+    height: 20px;
     border-style: solid;
     border-width: 1px;
     padding: 5px;
     text-align: center;
     vertical-align: middle;
+    font-size: 16px;
 }
 .prettybutton:hover {
     background: #FFFF00;
@@ -39,7 +40,7 @@ canvas {
 .prettybutton:active {
     background: #FF0000;
 }
-#sidebar {
+#text-column {
     background: #c9c;
     width: auto;
     overflow: hidden;
@@ -57,10 +58,10 @@ h1, h2, h3, p{
     font-family: Arial;
 }
 
-#scores-list {
+.scores-list {
     background: #7FBFFF;
-    width: 200px;
-    height: 420px;
+    width: 150px;
+    height: 410px;
     font-family: Arial;
     text-align: left;
     overflow-y: scroll;
