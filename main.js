@@ -1,10 +1,15 @@
+looperVar = 0;
+
 pipes = [];
 pipeNums = [];
 bird = 0;
+birds = [];
 ground = 0;
 outputs = [];
 population = [];
 popScores = [];
+birdsRemaining = 0;
+
 
 isPaused = false;
 
@@ -19,15 +24,18 @@ var playerHighScore = 0;
 var popSize = 20;
 var tourneySize = 20;
 var generation = 0;
-var creature = 0;
 
 var crossoverRate = 0.05;
-var mutationRate = 0.05;
+var mutationRate = 0.20;
 
 var A = 4;
 var B = 1;
 var C = 1;
 var D = 2;
+
+for (var i = 0; i < popSize; i++) {
+    popScores.push(0);
+}
 
 function toggle_mode() {
     aiOn = !aiOn;
@@ -65,7 +73,6 @@ function draw_stats() {
     ctx.fillStyle = "#000000";
     if (aiOn) {
         ctx.fillText("Generation " + generation.toString(), 10, 70);
-        ctx.fillText("Creature " + (creature+1).toString(), 10, 90);
     } else {
         ctx.fillText("Highscore " + playerHighScore.toFixed(1).toString(),
                 10, 70);
@@ -77,6 +84,19 @@ function draw_output_line() {
     ctx.moveTo(0, outputs[0] * canvas.height + bird.RADIUS * 2);
     ctx.lineTo(canvas.width, outputs[0] * canvas.height + bird.RADIUS * 2);
     ctx.stroke();
+}
+
+function draw_scoreboard() {
+    listHtml = "<ol>";
+    for (var i = 0; i < popScores.length; i++) {
+        listHtml += "<li>";
+        if (popScores[i] != 0) {
+            listHtml += popScores[i].toFixed(1).toString();
+        }
+        listHtml += "</li>";
+    }
+    listHtml += "</ol>";
+    document.getElementById("scores-list").innerHTML = listHtml;
 }
 
 function game_over() {
@@ -92,39 +112,31 @@ function game_over() {
 
 function init_environment() {
     pipes = [];
+    birds = [];
     pipeNums = [];
     pipes.push(new Pipe(ctx, canvas.width, canvas.height));
     pipeNums.push(1);
-    bird = new Bird(ctx, canvas.width, canvas.height);
+    if (aiOn) {
+        for (var i = 0; i < popSize; i++) {
+            birds.push(new Bird(ctx, canvas.width, canvas.height));
+        }
+        birdsRemaining = popSize;
+    } else {
+        bird = new Bird(ctx, canvas.width, canvas.height);
+    }
     score = 0;
 
 }
 
 function move_on_to_next() {
-    popScores.push(score);
     //console.log(popScores);
 
-    listHtml = "<ol>";
-    for (var i = 0; i < 1; i++) {
-        if (i < popScores.length) {
-            listHtml +=
-                "<li><b>" + popScores[i].toFixed(1).toString() + "</b></li>";
-        }
-    }
-    for (var i = 1; i < popScores.length; i++) {
-        listHtml += "<li>" + popScores[i].toFixed(1).toString() + "</li>";
-    }
-    listHtml += "</ol>";
-    document.getElementById("scores-list").innerHTML = listHtml;
 
-    creature++;
-    if (creature == popSize) {
-        creature = 0;
-        generation++;
-        // run genetic algorithm
-        //gen_alg_meh();
-        gen_alg_1best();
-    }
+    generation++;
+    // run genetic algorithm
+    //gen_alg_meh();
+    gen_alg_1best();
+    init_environment();
 } 
 
 function init_new() {
@@ -137,7 +149,6 @@ function init_new() {
 }
 
 function init_simulation() {
-    creature = 0;
     for (var i = 0; i < popSize; i++) {
         population.push(new NeuralNet(A, B, C, D));
     }
@@ -162,6 +173,7 @@ window.addEventListener('keydown', function(e) {
     }
     if (e.keyCode == 75) {
         turbo = !turbo;
+        //turboChanged = true;
     }
 
 }, true);
@@ -170,72 +182,71 @@ window.addEventListener('keyup', function(e) {
         bird.release();
     }
 }, true);
+
 function loop() {
     if (isPaused) return;
     // LOGIC
     // ai_stuff
     if (aiOn) {
-        // get inputs
-        var inputs = [];
-        inputs.push(bird.yPos / canvas.height * 2 - 1);
-        inputs.push(bird.yVel / 50);
-        var i;
-        for (i = 0; pipes[i].xPos + pipes[i].WIDTH < bird.X_POS; i++);
+        for (var k = 0; k < popSize; k++) {
+            if (birds[k] != 0) {
+                // get inputs
+                var inputs = [];
+                inputs.push(birds[k].yPos / canvas.height * 2 - 1);
+                inputs.push(birds[k].yVel / 50);
+                var i;
+                for (i = 0; pipes[i].xPos + pipes[i].WIDTH < birds[k].X_POS; i++);
 
-        if (pipes[i]) {
-            inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
-            inputs.push(pipes[i].GAP_POS / canvas.height * 2 - 1);
-        } else {
-            inputs.push(0);
-            inputs.push(0);
-        }
-        /*
-        var first = i;
-        while (i - first < 3 &&  i < pipes.length) {
-            inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
-            inputs.push(pipes[i].GAP_POS / canvas.height * 2 - 1);
-            i++;
-        }
-        if (i - first < 3) {
-            for (; i - first < 3; i++) {
-                inputs.push(-1);
-                inputs.push(-1);
+                if (pipes[i]) {
+                    inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
+                    inputs.push(pipes[i].GAP_POS / canvas.height * 2 - 1);
+                } else {
+                    inputs.push(0);
+                    inputs.push(0);
+                }
+                outputs = population[k].update(inputs);
+                //console.log(inputs);
+                //console.log(outputs);
+
+                // interpret output
+                if (outputs[0] > 0.5) {
+                    birds[k].flap();
+                } else {
+                    birds[k].release();
+                }
             }
         }
-        */
-        outputs = population[creature].update(inputs);
-        //console.log(inputs);
-        //console.log(outputs);
-
-        // interpret output
-        if (outputs[0] > 0.5) {
-            bird.flap();
-        } else {
-            bird.release();
-        }
-        /*
-        if (outputs[0] * canvas.height < bird.yPos) {
-            bird.flap();
-            bird.release();
-        }
-        */
     }
-    // check if bird died
-    for (var i = 0; i < pipes.length; i++) {
-        if (is_collide(bird, pipes[i])) {
-            if (aiOn) {
-                move_on_to_next();
-                init_environment();
-            } else {
+    // check if bird/s died
+    if (aiOn) {
+        for (var k = 0; k < popSize; k++) {
+            if (birds[k] != 0) {
+                for (var i = 0; i < pipes.length; i++) {
+                    if (is_collide(birds[k], pipes[i])) {
+                        birds[k] = 0;
+                        popScores[k] = score;
+                        birdsRemaining--;
+                        draw_scoreboard();
+                    }
+                }
+                if (birds[k].yPos + birds[k].RADIUS >= canvas.height - ground.HEIGHT) {
+                    birds[k] = 0;
+                    popScores[k] = score;
+                    birdsRemaining--;
+                    draw_scoreboard();
+                }
+            }
+        }
+        if (birdsRemaining == 0) {
+            move_on_to_next();
+        }
+    } else {
+        for (var i = 0; i < pipes.length; i++) {
+            if (is_collide(bird, pipes[i])) {
                 game_over();
             }
         }
-    }
-    if (bird.yPos + bird.RADIUS >= canvas.height - ground.HEIGHT) {
-        if (aiOn) {
-            move_on_to_next();
-            init_environment();
-        } else {
+        if (bird.yPos + bird.RADIUS >= canvas.height - ground.HEIGHT) {
             game_over();
         }
     }
@@ -256,7 +267,15 @@ function loop() {
         for (var i = 0; i < pipes.length; i++) {
             pipes[i].update();
         }
-        bird.update();
+        if (aiOn) {
+            for (var k = 0; k < popSize; k++) {
+                if (birds[k] != 0) {
+                    birds[k].update();
+                }
+            }
+        } else {
+            bird.update();
+        }
 
         // RENDERING
 
@@ -269,7 +288,16 @@ function loop() {
                 ctx.fillStyle = "#000000";
                 ctx.fillText(pipeNums[i].toString(), pipes[i].xPos - 50, 25);
             }
-            bird.draw();
+
+            if (aiOn) {
+                for (var k = 0; k < popSize; k++) {
+                    if (birds[k] != 0) {
+                        birds[k].draw();
+                    }
+                }
+            } else {
+                bird.draw();
+            }
             ground.draw();
             /*
             if (aiOn) {
@@ -299,7 +327,7 @@ function Pipe(ctx, canvasWidth, canvasHeight) {
                 this.WIDTH, this.GAP_POS);
     }
     this.update = function(){
-        this.xPos += -3;
+        this.xPos += -4;
     }
 }
 
@@ -323,6 +351,9 @@ function Bird(ctx, canvasWidth, canvasHeight) {
         this.isFlapped = false;
     }
     this.draw = function(){
+        if (aiOn) {
+            ctx.globalAlpha=0.2;
+        }
         ctx.beginPath();
         ctx.arc(this.X_POS, this.yPos, this.RADIUS, 0, 2*Math.PI, false);
         ctx.fillStyle = "#DF2222";
@@ -330,6 +361,9 @@ function Bird(ctx, canvasWidth, canvasHeight) {
         ctx.lineWidth = 3;
         ctx.strokeStyle = "#000000";
         ctx.stroke();
+        if (aiOn) {
+            ctx.globalAlpha=1;
+        }
     }
     this.update = function(){
         this.yVel += this.GRAVITY;
@@ -438,6 +472,9 @@ function gen_alg_meh() {
     }
     population = newPopulation;
     popScores = [];
+    for (var i = 0; i < popSize; i++) {
+        popScores.push(0);
+    }
 }
 
 /*
@@ -502,6 +539,9 @@ function gen_alg_2best() {
     }
     population = newPop;
     popScores = [];
+    for (var i = 0; i < popSize; i++) {
+        popScores.push(0);
+    }
 }
 function gen_alg_1best() {
     var newPop = [];
@@ -517,28 +557,25 @@ function gen_alg_1best() {
     newPop.push(new NeuralNet(A, B, C, D));
     newPopWeights.push(population[bestGuy].get_weights());
     newPop[0].set_weights(newPopWeights[0]);
-    for (var i = 1; i < popSize; i += 2) {
+    for (var i = 1; i < popSize; i++) {
         newPop.push(new NeuralNet(A, B, C, D));
         newPopWeights.push(newPop[0].get_weights());
-        newPop.push(new NeuralNet(A, B, C, D));
-        newPopWeights.push(newPop[1].get_weights());
 
         for (var j = 0; j < newPopWeights[i].length; j++) {
             // mutation
-            for (var child = i; child < i+2; child++) {
-                if (Math.random() < mutationRate) {
-                    newPopWeights[child][j] =
-                        random_normal_offset(newPopWeights[child][j]);
+            if (Math.random() < mutationRate) {
+                newPopWeights[i][j] = Math.random() * 2 - 1;
+                    //random_normal_offset(newPopWeights[child][j]);
                 }
-            }
         }
         newPop[i].set_weights(newPopWeights[i]);
-        newPop[i+1].set_weights(newPopWeights[i+1]);
-    }
-    if (popSize % 2 == 0) {
-        newPop.pop();
     }
     population = newPop;
     popScores = [];
+    for (var i = 0; i < popSize; i++) {
+        popScores.push(0);
+    }
 }
-setInterval(loop, 0);
+
+
+setInterval(loop, 20);

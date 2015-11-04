@@ -14,11 +14,10 @@ canvas {
     float: left;
     background: #1F7FFF;
     width: 200px;
-    height: 550px;
+    height: 580px;
     border-style: solid;
     border-width: 1px;
     padding: 10px;
-    padding-top: 40px;
 }
 .prettybutton {
     font-size: 18px;
@@ -38,9 +37,7 @@ canvas {
     background: #FFFF00;
 }
 .prettybutton:active {
-    font-size: 17px;
-    width: 140px;
-    height: 23px;
+    background: #FF0000;
 }
 #sidebar {
     background: #c9c;
@@ -56,14 +53,14 @@ canvas {
     padding: 5px;
 }
 
-h1, h2, p{
+h1, h2, h3, p{
     font-family: Arial;
 }
 
 #scores-list {
     background: #7FBFFF;
     width: 200px;
-    height: 200px;
+    height: 420px;
     font-family: Arial;
     text-align: left;
     overflow-y: scroll;
