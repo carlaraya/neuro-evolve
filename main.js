@@ -1,6 +1,7 @@
 /*
  * TODO: Make table for each trial
  * TODO: Add another output for threshold (so it's not always 0.5)
+ * TODO: Try modifying L
  */
 
 pipes = [];
@@ -30,13 +31,12 @@ var groundHeight = 50;
 var playerHighScore = 0;
 
 var popSize = 20;
-var tourneySize = 20;
 var generation = 0;
 var trial = 0;
 var numTrials = 3;
 
-var crossoverRate = 0.5;
-var mutationRate = 0.1;
+var crossoverRate = 0.05;
+var mutationRate = 0.05;
 
 
 var A = 4;
@@ -164,7 +164,8 @@ function move_on_to_next() {
         }
         generation++;
         trial = 0;
-        genalg_cosyne();
+        //genalg_cosyne();
+        genalg_basic();
     }
     init_environment();
     draw_highscoreboard();
@@ -232,8 +233,8 @@ function loop() {
                     inputs.push(pipes[i].xPos / canvas.width * 2 - 1);
                     inputs.push(pipes[i].GAP_POS / canvas.height * 2 - 1);
                 } else {
-                    inputs.push(0);
-                    inputs.push(0);
+                    inputs.push(1);
+                    inputs.push(1);
                 }
                 outputs = population[k].update(inputs);
                 //console.log(inputs);
@@ -360,7 +361,7 @@ function Pipe(ctx, canvasWidth, canvasHeight) {
                 this.WIDTH, this.GAP_POS);
     }
     this.update = function(){
-        this.xPos += -4;
+        this.xPos += -3;
     }
 }
 
@@ -471,7 +472,7 @@ function shuffle(o){
 // http://www.jmlr.org/papers/volume9/gomez08a/gomez08a.pdf
 function genalg_cosyne() {
     var quarter = (popSize) / 4 | 0;
-    var L = (popSize) / 2 | 0;
+    var L = (popSize) / 4 | 0;
     var popAndScores = [];
     for (var i = 0; i < popSize; i++) {
         popAndScores.push([popScores[i], new NeuralNet(A, B, C, D)]);
@@ -480,7 +481,7 @@ function genalg_cosyne() {
     for (var i = 0; i < popSize; i++) {
         var best = i;
         for (var j = i; j < popSize; j++) {
-            if (popAndScores[j][0] >= popAndScores[best][0]) {
+            if (popAndScores[j][0] > popAndScores[best][0]) {
                 best = j;
             }
         }
@@ -557,5 +558,78 @@ function genalg_cosyne() {
     }
 }
 
+function genalg_basic() {
+    var numBest = popSize / 4 | 0;
+    var L = popSize - numBest | 0;
+    var popAndScores = [];
+    for (var i = 0; i < popSize; i++) {
+        popAndScores.push([popScores[i], new NeuralNet(A, B, C, D)]);
+        popAndScores[i][1].set_weights(population[i].get_weights());
+    }
+    for (var i = 0; i < popSize; i++) {
+        var best = i;
+        for (var j = i; j < popSize; j++) {
+            if (popAndScores[j][0] > popAndScores[best][0]) {
+                best = j;
+            }
+        }
+        var swapVar = popAndScores[best];
+        popAndScores[best] = popAndScores[i];
+        popAndScores[i] = swapVar;
+    }
+
+
+    var bestWeights = [];
+    for (var i = 0; i < numBest; i++) {
+        bestWeights.push(popAndScores[i][1].get_weights());
+    }
+
+    var newWeights = [];
+    for (var i = 0; i < (L + 1) / 2; i++) {
+        var mom = random_weighted(numBest);
+        var dad = random_weighted(numBest - 1);
+        if (dad >= mom) {
+            dad++;
+        }
+
+        var momWeights = bestWeights[mom];
+        var dadWeights = bestWeights[dad];
+
+        for (var j = 0; j < momWeights.length; j++) {
+            // crossover
+            if (Math.random() < crossoverRate) {
+                var swapVar = momWeights[j];
+                momWeights[j] = dadWeights[j];
+                dadWeights[j] = swapVar;
+            }
+            // mutation
+            if (Math.random() < mutationRate) {
+                momWeights[j] = random_normal_offset(momWeights[j]);
+            }
+            if (Math.random() < mutationRate) {
+                dadWeights[j] = random_normal_offset(dadWeights[j]);
+            }
+        }
+        newWeights.push(momWeights);
+        newWeights.push(dadWeights);
+    }
+    if (L % 2 == 1) {
+        newWeights.pop();
+    }
+
+    for (var i = 0; i < L; i++) {
+        popAndScores[popSize - i - 1][1].set_weights(newWeights[i]);
+    }
+
+    var popWeights = [];
+    for (var i = 0; i < popSize; i++) {
+        population[i].set_weights(popAndScores[i][1].get_weights());
+    }
+
+    popScores = [];
+    for (var i = 0; i < popSize; i++) {
+        popScores.push(0);
+    }
+}
 
 setInterval(loop, 20);
