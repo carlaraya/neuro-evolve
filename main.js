@@ -49,7 +49,7 @@ for (var i = 0; i < popSize; i++) {
     trialScores.push(0);
 }
 
-function export_data() {
+function export_save() {
     if (aiOn) {
         var text = generation.toString() + " ";
         for (var i = 0; i < popSize; i++) {
@@ -59,13 +59,13 @@ function export_data() {
             }
         }
 
-        window.prompt("Press ctrl+c to copy data, then press enter.", text);
+        window.prompt("Press ctrl+c to copy save data, then press enter.", text);
     }
 }
 
-function import_data() {
+function import_save() {
     if (aiOn) {
-        var text = window.prompt("Paste data here");
+        var text = window.prompt("Paste save data here");
         var nums = text.split(" ").map(Number);
         var k = 1;
         temppop = [];
@@ -115,12 +115,12 @@ function toggle_mode() {
 function init_button_text() {
     if (aiOn) {
         document.getElementById("toggle-mode").innerHTML = "Switch to 1-player";
-        document.getElementById("export-data").innerHTML = "Export data";
-        document.getElementById("import-data").innerHTML = "Import data";
+        document.getElementById("export-save").innerHTML = "Export save data";
+        document.getElementById("import-save").innerHTML = "Import save data";
     } else {
         document.getElementById("toggle-mode").innerHTML = "Switch to 0-player";
-        document.getElementById("export-data").innerHTML = "";
-        document.getElementById("import-data").innerHTML = "";
+        document.getElementById("export-save").innerHTML = "";
+        document.getElementById("import-save").innerHTML = "";
     }
 }
 
