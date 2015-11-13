@@ -35,6 +35,8 @@ var generation = 0;
 var trial = 0;
 var numTrials = 3;
 
+var startNumbering = 1;
+
 var crossoverRate = 0.05;
 var mutationRate = 0.05;
 
@@ -88,6 +90,7 @@ function import_save() {
         }
 
         popScores = [];
+        highScores = [];
         for (var i = 0; i < popSize; i++) {
             popScores.push(0);
         }
@@ -95,6 +98,7 @@ function import_save() {
         generation = nums[0];
         init_environment();
         draw_highscoreboard();
+        startNumbering = generation + 1;
     }
 }
 
@@ -162,7 +166,7 @@ function draw_scoreboard() {
 }
 
 function draw_highscoreboard() {
-    listHtml = "<ol>";
+    listHtml = "<ol start = " + startNumbering.toString() + ">";
     for (var i = 0; i < highScores.length; i++) {
         listHtml += "<li>";
         listHtml += highScores[i].toFixed(1).toString();
