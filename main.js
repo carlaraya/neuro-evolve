@@ -49,6 +49,55 @@ for (var i = 0; i < popSize; i++) {
     trialScores.push(0);
 }
 
+function export_data() {
+    if (aiOn) {
+        var text = generation.toString() + " ";
+        for (var i = 0; i < popSize; i++) {
+            weights = population[i].get_weights();
+            for (var j = 0; j < weights.length; j++) {
+                text += weights[j] + " ";
+            }
+        }
+
+        window.prompt("Press ctrl+c to copy data, then press enter.", text);
+    }
+}
+
+function import_data() {
+    if (aiOn) {
+        var text = window.prompt("Paste data here");
+        var nums = text.split(" ").map(Number);
+        var k = 1;
+        temppop = [];
+        for (var i = 0; i < popSize; i++) {
+            temppop.push(new NeuralNet(A, B, C, D));
+            var numWeights = temppop[i].get_weights().length;
+            var weights = [];
+            for (var j = 0; j < numWeights; j++) {
+                if (k >= nums.length)
+                {
+                    alert("Error: Invalid data");
+                    return;
+                }
+                weights.push(nums[k++]);
+            }
+            temppop[i].set_weights(weights);
+        }
+        for (var i = 0; i < popSize; i++) {
+            population[i] = temppop[i];
+        }
+
+        popScores = [];
+        for (var i = 0; i < popSize; i++) {
+            popScores.push(0);
+        }
+        trial = 0;
+        generation = nums[0];
+        init_environment();
+        draw_highscoreboard();
+    }
+}
+
 function toggle_mode() {
     aiOn = !aiOn;
     isPaused = false;
@@ -62,11 +111,16 @@ function toggle_mode() {
     }
 }
 
+
 function init_button_text() {
     if (aiOn) {
         document.getElementById("toggle-mode").innerHTML = "Switch to 1-player";
+        document.getElementById("export-data").innerHTML = "Export data";
+        document.getElementById("import-data").innerHTML = "Import data";
     } else {
         document.getElementById("toggle-mode").innerHTML = "Switch to 0-player";
+        document.getElementById("export-data").innerHTML = "";
+        document.getElementById("import-data").innerHTML = "";
     }
 }
 
@@ -144,7 +198,6 @@ function init_environment() {
         bird = new Bird(ctx, canvas.width, canvas.height);
     }
     score = 0;
-
 }
 
 function move_on_to_next() {
@@ -203,11 +256,14 @@ window.addEventListener('keydown', function(e) {
             isPaused = false;
         }
     }
-    if (e.keyCode == 75) {
-        turbo = !turbo;
-        //turboChanged = true;
+    if (e.keyCode == 80) {
+        isPaused = !isPaused;
+        if (isPaused) {
+            ctx.font = "24px arial";
+            ctx.fillStyle = "#000000";
+            ctx.fillText("PAUSED", canvas.width / 2 - 60, canvas.height / 2);
+        }
     }
-
 }, true);
 window.addEventListener('keyup', function(e) {
     if (!aiOn) {

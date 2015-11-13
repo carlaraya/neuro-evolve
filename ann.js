@@ -80,7 +80,6 @@ function NeuralNet(nInputs, nOutputs, nHiddenLayers, nNeursPerHiddenLyr) {
             }
         }
     }
-
 }
 
 function sigmoid(x) {
