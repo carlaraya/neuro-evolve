@@ -37,7 +37,7 @@ var numTrials = 3;
 
 var startNumbering = 1;
 
-var crossoverRate = 0.05;
+var crossoverRate = 0.50;
 var mutationRate = 0.05;
 
 
@@ -99,6 +99,9 @@ function import_save() {
         init_environment();
         draw_highscoreboard();
         startNumbering = generation + 1;
+        for (var i = 0; i < popSize; i++) {
+            trialScores[i] = 0;
+        }
     }
 }
 
@@ -566,13 +569,15 @@ function genalg_cosyne() {
         var momWeights = bestWeights[mom];
         var dadWeights = bestWeights[dad];
 
-        for (var j = 0; j < momWeights.length; j++) {
-            // crossover
-            if (Math.random() < crossoverRate) {
-                var swapVar = momWeights[j];
-                momWeights[j] = dadWeights[j];
-                dadWeights[j] = swapVar;
+        if (Math.random() < crossoverRate) {
+            for (i = Math.random() * momWeights.length | 0; i < momWeights.length; i++) {
+                var swapVar = momWeights[i];
+                momWeights[i] = dadWeights[i];
+                dadWeights[i] = swapVar;
             }
+        }
+
+        for (var j = 0; j < momWeights.length; j++) {
             // mutation
             if (Math.random() < mutationRate) {
                 momWeights[j] = random_normal_offset(momWeights[j]);
